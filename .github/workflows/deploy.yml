@@ -1,9 +1,9 @@
-name: Deploy to GitHub Pages
+name: Deploy Portfolio to GitHub Pages
 
 on:
   push:
     branches:
-      - main
+      - main   # Trigger deployment on pushes to main
 
 permissions:
   contents: read
@@ -11,31 +11,31 @@ permissions:
   id-token: write
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      # 1️⃣ Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      # 2️⃣ Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
+      # 3️⃣ Install dependencies
       - name: Install dependencies
         run: npm install
 
-      - name: Build
+      # 4️⃣ Build production bundle
+      - name: Build project
         run: npm run build
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy
+      # 5️⃣ Upload dist folder to GitHub Pages
+      - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
+        with:
+          # Path to production build
+          path: ./dist
