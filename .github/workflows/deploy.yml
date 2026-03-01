@@ -3,7 +3,7 @@ name: Deploy Portfolio to GitHub Pages
 on:
   push:
     branches:
-      - main   # Trigger deployment on pushes to main
+      - main  # Trigger on pushes to main
 
 permissions:
   contents: read
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
+      # 1️⃣ Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -29,13 +29,12 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # 4️⃣ Build production bundle
+      # 4️⃣ Build production files
       - name: Build project
         run: npm run build
 
-      # 5️⃣ Upload dist folder to GitHub Pages
+      # 5️⃣ Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
         with:
-          # Path to production build
-          path: ./dist
+          path: ./dist   # ✅ Must match vite build outDir
