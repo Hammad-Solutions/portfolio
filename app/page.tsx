@@ -25,7 +25,8 @@ import RadialStat from "../components/ui/RadialStat";
 import SocialProof from "../components/ui/SocialProof";
 import CommandPalette from "../components/ui/CommandPalette";
 import RecruiterModeModal from "../components/ui/RecruiterModeModal";
-import { Volume2, VolumeX } from "lucide-react";
+import ResumeModal from "../components/ui/ResumeModal";
+import { Volume2, VolumeX, Mic, MicOff, Sparkles, FileText } from "lucide-react";
 import { getBotResponse } from "../lib/rag";
 import styles from "./page.module.css";
 import PageLoader, { usePageLoader } from "../components/ui/PageLoader";
@@ -243,7 +244,6 @@ function HeroAvatar() {
   );
 }
 
-
 interface BentoCardProps {
   children: React.ReactNode;
   className?: string;
@@ -266,12 +266,25 @@ function BentoCard({ children, className = "", variants, innerClassName = "flex 
   );
 }
 
-const SUGGESTED_PILLS = [
-  { label: "Capabilities 💻", prompt: "What are your core technical capabilities and programming languages?" },
-  { label: "Smart Helmet IoT 🪖", prompt: "Tell me about the Smart Helmet project you built." },
-  { label: "C++ Projects ⚙️", prompt: "Explain your experience with C++ systems and file handling." },
-  { label: "Get In Touch ✉️", prompt: "How can I contact Muhammad Hammad for jobs or projects?" }
-];
+const PROMPT_CATEGORIES = {
+  resume: [
+    { label: "📄 Summarize CV", prompt: "Can you provide a concise summary of Muhammad Hammad's resume and qualifications?" },
+    { label: "💼 Why Hire Hammad?", prompt: "Why should a hiring manager choose Muhammad Hammad for full-stack and systems roles?" },
+    { label: "🛠️ Core Tech Stack", prompt: "What are Hammad's core technologies across frontend, backend, and low-level systems?" },
+    { label: "⚙️ C++ Systems Exp", prompt: "Detail Hammad's experience with C++ systems programming, binary serialization, and ACID rollback." },
+  ],
+  projects: [
+    { label: "🚀 SaaS DevBoard", prompt: "Explain the architecture, GitHub webhooks, and Prisma setup in SaaS DevBoard." },
+    { label: "✨ StyleWay Studio", prompt: "How was StyleWay Studio built using Next.js 16, Supabase SSR, and SWR caching?" },
+    { label: "🌐 3D AI Portfolio", prompt: "How is this interactive 3D AI portfolio engineered with Three.js and Groq LLM?" },
+    { label: "🏦 C++ Bank Engine", prompt: "How does the C++ Bank Management System enforce atomic disk buffering?" },
+  ],
+  general: [
+    { label: "⚡ Available for Roles?", prompt: "Is Muhammad Hammad currently open for software engineering roles or internships?" },
+    { label: "✉️ Direct Contact", prompt: "What is the best way to contact Muhammad Hammad for technical collaboration?" },
+    { label: "🎓 Academic Degree", prompt: "What is Hammad studying at Air University and what are his core CS courses?" },
+  ]
+};
 
 export default function Home() {
   const { scrollYProgress } = useScroll();
@@ -308,7 +321,57 @@ export default function Home() {
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isRecruiterModalOpen, setIsRecruiterModalOpen] = useState(false);
+  const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
+  const [isRecording, setIsRecording] = useState(false);
+  const [promptCategory, setPromptCategory] = useState<"resume" | "projects" | "general">("resume");
+
+  // Speech-to-Text (STT) Voice-to-Voice AI Listener
+  const startListening = () => {
+    if (typeof window === "undefined") return;
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) {
+      alert("Voice speech recognition is not supported in this browser. Try Chrome, Edge, or Safari.");
+      return;
+    }
+
+    try {
+      if (isRecording) {
+        setIsRecording(false);
+        return;
+      }
+
+      const recognition = new SpeechRec();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = "en-US";
+
+      recognition.onstart = () => {
+        setIsRecording(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInputValue(transcript);
+        setIsRecording(false);
+        sendMessage(transcript);
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error:", event.error);
+        setIsRecording(false);
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.error("Failed to start voice recognition:", err);
+      setIsRecording(false);
+    }
+  };
 
   // Global hotkey for Cmd+K / Ctrl+K Command Palette
   useEffect(() => {
@@ -875,22 +938,21 @@ export default function Home() {
                             </motion.button>
                           </MagneticButton>
                         </a>
-                        <a href="/Muhammad_Hammad_Resume.docx" download="Muhammad_Hammad_Resume.docx" target="_blank" rel="noopener noreferrer" className="w-full">
-                          <MagneticButton className="w-full">
-                            <motion.button
-                              whileHover={{
-                                borderColor: "#3B82F6",
-                                boxShadow: "0 0 20px rgba(59,130,246,0.25)",
-                                backgroundColor: "rgba(59,130,246,0.05)"
-                              }}
-                              whileTap={{ scale: 0.98 }}
-                              className={`${styles.btnSecondary} w-full flex items-center justify-center gap-2 py-2.5 font-bold text-[11px]`}
-                            >
-                              <DownloadIcon />
-                              Download CV
-                            </motion.button>
-                          </MagneticButton>
-                        </a>
+                        <MagneticButton className="w-full">
+                          <motion.button
+                            onClick={() => setIsResumeModalOpen(true)}
+                            whileHover={{
+                              borderColor: "#10B981",
+                              boxShadow: "0 0 20px rgba(16,185,129,0.25)",
+                              backgroundColor: "rgba(16,185,129,0.08)"
+                            }}
+                            whileTap={{ scale: 0.98 }}
+                            className={`${styles.btnSecondary} w-full flex items-center justify-center gap-2 py-2.5 font-bold text-[11px] text-white`}
+                          >
+                            <FileText size={14} className="text-[#10B981]" />
+                            View Verified CV / Resume
+                          </motion.button>
+                        </MagneticButton>
                       </div>
                       <div className="flex gap-3 justify-center">
                         <motion.a
@@ -1042,11 +1104,13 @@ export default function Home() {
             <About />
             <Skills />
             <SocialProof />
-            <Projects />
+            <Projects onOpenChatWithPrompt={(prompt) => {
+              setMode("terminal");
+              setIsChatOpen(true);
+              sendMessage(prompt);
+            }} />
             <Contact />
           </div>
-
-
 
           {/* Enhanced 3-Column Footer */}
           <footer className={styles.footer}>
@@ -1147,7 +1211,18 @@ export default function Home() {
                       <div className="w-3 h-3 rounded-full bg-[#f59e0b] opacity-80" />
                       <div className="w-3 h-3 rounded-full bg-[#10b981] opacity-80" />
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5">
+                      {/* View Verified CV Quick Trigger */}
+                      <button
+                        onClick={() => setIsResumeModalOpen(true)}
+                        className="px-2.5 py-1 rounded transition-colors text-[10px] font-mono flex items-center gap-1.5 border border-[#10B981]/30 bg-[#10B981]/10 text-[#10B981] hover:bg-[#10B981]/20 cursor-pointer"
+                        title="Open Verified Interactive CV"
+                      >
+                        <FileText size={12} />
+                        <span className="hidden sm:inline">View CV</span>
+                      </button>
+
+                      {/* Voice Narration (TTS) Toggle */}
                       <button
                         onClick={() => {
                           const next = !isVoiceEnabled;
@@ -1216,31 +1291,70 @@ export default function Home() {
                     <div ref={chatEndRef} />
                   </div>
 
-                  {/* Suggestion Pills */}
-                  <div className="px-6 py-3 bg-[#0A0A0A]/40 border-t border-[#262626]/40 flex flex-wrap gap-2">
-                    {SUGGESTED_PILLS.map((pill) => (
-                      <button
-                        key={pill.label}
-                        onClick={() => sendMessage(pill.prompt)}
-                        className="px-3 py-1 rounded-full border border-[#262626] hover:border-[#3B82F6]/50 bg-[#121212]/50 hover:bg-[#3B82F6]/5 text-[10px] font-mono text-[#a3a3a3] hover:text-[#EDEDED] transition-all duration-300 cursor-pointer select-none"
-                      >
-                        {pill.label}
-                      </button>
-                    ))}
+                  {/* Dynamic Categorized Suggestion Pills */}
+                  <div className="px-6 py-2.5 bg-[#0A0A0A]/60 border-t border-[#262626]/40 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] font-mono text-neutral-500 uppercase">Context:</span>
+                        {(["resume", "projects", "general"] as const).map((cat) => (
+                          <button
+                            key={cat}
+                            onClick={() => setPromptCategory(cat)}
+                            className={`px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-wider transition-all cursor-pointer ${
+                              promptCategory === cat
+                                ? "bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/40 font-bold"
+                                : "text-neutral-400 hover:text-neutral-200 border border-transparent hover:bg-white/5"
+                            }`}
+                          >
+                            {cat === "resume" ? "Resume Q&A" : cat === "projects" ? "Projects" : "General"}
+                          </button>
+                        ))}
+                      </div>
+
+                      <span className="text-[9px] font-mono text-neutral-500 hidden sm:inline">
+                        1-Click AI Queries
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {PROMPT_CATEGORIES[promptCategory].map((pill) => (
+                        <button
+                          key={pill.label}
+                          onClick={() => sendMessage(pill.prompt)}
+                          className="px-2.5 py-1 rounded-full border border-[#262626] hover:border-[#10B981]/50 bg-[#121212]/50 hover:bg-[#10B981]/5 text-[10px] font-mono text-[#a3a3a3] hover:text-[#EDEDED] transition-all duration-300 cursor-pointer select-none"
+                        >
+                          {pill.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Keyboard Text Entry Input */}
-                  <div className="p-4 bg-[#121212]/45 border-t border-[#262626] flex items-center">
-                    <span className="text-[#3B82F6] font-mono text-xs mr-3 font-bold select-none">{">"}</span>
+                  {/* Keyboard & Voice Text Entry Input */}
+                  <div className="p-4 bg-[#121212]/45 border-t border-[#262626] flex items-center gap-2">
+                    <span className="text-[#3B82F6] font-mono text-xs font-bold select-none">{">"}</span>
                     <input
                       type="text"
                       required
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                       onKeyDown={handleSendMessage}
-                      placeholder="Ask me something about Hammad's tech stack or availability... (Press Enter)"
+                      placeholder={isRecording ? "Listening... Speak your question..." : "Ask me anything about Hammad's tech stack, resume, or projects... (Press Enter)"}
                       className="flex-1 bg-transparent border-none text-[#EDEDED] font-mono text-xs focus:outline-none focus:ring-0 placeholder-[#737373]/80"
                     />
+
+                    {/* Speech-to-Text Voice Microphone Button */}
+                    <button
+                      type="button"
+                      onClick={startListening}
+                      className={`p-2 rounded-lg border transition-all cursor-pointer flex items-center justify-center ${
+                        isRecording
+                          ? "bg-red-500/20 border-red-500/50 text-red-400 animate-pulse shadow-[0_0_12px_rgba(239,68,68,0.4)]"
+                          : "bg-white/5 border-white/10 hover:border-emerald-500/40 text-neutral-400 hover:text-emerald-400"
+                      }`}
+                      title={isRecording ? "Listening... click to cancel" : "Click to speak with Hammad AI (Voice-to-Voice Mode)"}
+                    >
+                      {isRecording ? <MicOff size={15} /> : <Mic size={15} />}
+                    </button>
                   </div>
                 </motion.div>
               </div>
@@ -1309,6 +1423,7 @@ export default function Home() {
           a.target = "_blank";
           a.click();
         }}
+        onViewCV={() => setIsResumeModalOpen(true)}
         onCopyEmail={() => {
           if (navigator.clipboard) {
             navigator.clipboard.writeText("hammadsolutions.support@gmail.com");
@@ -1329,6 +1444,7 @@ export default function Home() {
           a.target = "_blank";
           a.click();
         }}
+        onViewCV={() => setIsResumeModalOpen(true)}
         onCopyEmail={() => {
           if (navigator.clipboard) {
             navigator.clipboard.writeText("hammadsolutions.support@gmail.com");
@@ -1338,6 +1454,17 @@ export default function Home() {
         onOpenChat={() => {
           setMode("terminal");
           setIsChatOpen(true);
+        }}
+      />
+
+      {/* Interactive Resume / PDF Viewer Modal */}
+      <ResumeModal
+        isOpen={isResumeModalOpen}
+        onClose={() => setIsResumeModalOpen(false)}
+        onOpenChatWithPrompt={(prompt) => {
+          setMode("terminal");
+          setIsChatOpen(true);
+          sendMessage(prompt);
         }}
       />
     </PageLoader>

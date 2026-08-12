@@ -20,6 +20,7 @@ interface CommandPaletteProps {
   onSelectSection: (sectionId: string) => void;
   onOpenChat: () => void;
   onDownloadCV: () => void;
+  onViewCV?: () => void;
   onCopyEmail: () => void;
   onOpenRecruiterView: () => void;
 }
@@ -30,6 +31,7 @@ export default function CommandPalette({
   onSelectSection,
   onOpenChat,
   onDownloadCV,
+  onViewCV,
   onCopyEmail,
   onOpenRecruiterView,
 }: CommandPaletteProps) {
@@ -51,6 +53,18 @@ export default function CommandPalette({
       },
     },
     {
+      id: "view-cv",
+      title: "Interactive Resume / CV Viewer",
+      subtitle: "Preview verified CV with experience, skills & education",
+      category: "Actions",
+      icon: FileText,
+      iconColor: "#10B981",
+      action: () => {
+        if (onViewCV) onViewCV();
+        onClose();
+      },
+    },
+    {
       id: "ai-concierge",
       title: "Ask Hammad AI Concierge",
       subtitle: "Query Hammad's RAG bot about architecture & availability",
@@ -64,8 +78,8 @@ export default function CommandPalette({
     },
     {
       id: "download-cv",
-      title: "Download Resume / CV",
-      subtitle: "Get latest PDF/DOCX resume file",
+      title: "Download Resume / CV (DOCX)",
+      subtitle: "Get latest verified DOCX resume file",
       category: "Quick Link",
       icon: FileText,
       iconColor: "#A855F7",

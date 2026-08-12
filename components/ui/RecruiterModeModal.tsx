@@ -8,6 +8,7 @@ interface RecruiterModeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onDownloadCV: () => void;
+  onViewCV?: () => void;
   onCopyEmail: () => void;
   onOpenChat: () => void;
 }
@@ -16,6 +17,7 @@ export default function RecruiterModeModal({
   isOpen,
   onClose,
   onDownloadCV,
+  onViewCV,
   onCopyEmail,
   onOpenChat,
 }: RecruiterModeModalProps) {
@@ -120,12 +122,25 @@ export default function RecruiterModeModal({
 
             {/* Fast-Track Action Buttons */}
             <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center gap-3">
+              {onViewCV && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onViewCV();
+                  }}
+                  className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-xs font-bold transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                >
+                  <Award className="w-4 h-4" />
+                  View Interactive CV
+                </button>
+              )}
+
               <button
                 onClick={onDownloadCV}
-                className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-xs font-bold transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-mono text-xs font-semibold transition-all"
               >
-                <Download className="w-4 h-4" />
-                Download CV (DOCX)
+                <Download className="w-4 h-4 text-emerald-400" />
+                Download DOCX
               </button>
 
               <button

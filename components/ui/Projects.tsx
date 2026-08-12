@@ -4,11 +4,12 @@ import React, { useState, useEffect, useRef, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Image as DreiImage, Text, Loader, RoundedBox, Html } from "@react-three/drei";
+import { Image as DreiImage, Text, RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 import { portfolioData, Project } from "../../data/portfolio";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { Sparkles, Zap, BatteryCharging, Power } from "lucide-react";
 
 const ArchitectureDiagram = dynamic(() => import("./ArchitectureDiagram"), { ssr: false });
 
@@ -25,6 +26,23 @@ const GithubIcon = () => (
     <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
   </svg>
 );
+
+function MouseFollowLight({ enabled = true }: { enabled?: boolean }) {
+  const lightRef = useRef<THREE.PointLight>(null);
+
+  useFrame(({ pointer, viewport }) => {
+    if (!lightRef.current || !enabled) return;
+    const targetX = (pointer.x * viewport.width) * 0.4;
+    const targetY = (pointer.y * viewport.height) * 0.4;
+    lightRef.current.position.x = THREE.MathUtils.lerp(lightRef.current.position.x, targetX, 0.08);
+    lightRef.current.position.y = THREE.MathUtils.lerp(lightRef.current.position.y, targetY, 0.08);
+    lightRef.current.position.z = 4.5;
+  });
+
+  if (!enabled) return null;
+
+  return <pointLight ref={lightRef} intensity={1.5} distance={14} color="#60A5FA" decay={2} />;
+}
 
 function WebGLProjectCard({
   project,
@@ -204,7 +222,8 @@ function ProjectCarousel3D({
   activeNode,
   setActiveNode,
   setIsAutoPlaying,
-  isVisible
+  isVisible,
+  isEcoMode
 }: {
   projects: Project[];
   onSelectProject: (p: Project) => void;
@@ -212,9 +231,13 @@ function ProjectCarousel3D({
   setActiveNode: (n: number) => void;
   setIsAutoPlaying: (v: boolean) => void;
   isVisible: boolean;
+  isEcoMode: boolean;
 }) {
   return (
     <group>
+      <ambientLight intensity={isEcoMode ? 0.8 : 0.5} />
+      <pointLight position={[10, 10, 10]} intensity={1.1} />
+      <MouseFollowLight enabled={!isEcoMode} />
       {projects.map((project, idx) => (
         <WebGLProjectCard
           key={project.id}
@@ -237,10 +260,15 @@ function ProjectCarousel3D({
   );
 }
 
-export default function Projects() {
+export default function Projects({
+  onOpenChatWithPrompt
+}: {
+  onOpenChatWithPrompt?: (prompt: string) => void;
+}) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [activeNode, setActiveNode] = useState<number>(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [isEcoMode, setIsEcoMode] = useState(false);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [canvasKey, setCanvasKey] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
@@ -253,6 +281,17 @@ export default function Projects() {
   const allProjects = portfolioData.projects as unknown as Project[];
   const featuredProjects = allProjects.filter((p) => p.featured);
   const otherProjects = allProjects.filter((p) => !p.featured);
+
+  useEffect(() => {
+    // Auto-detect mobile devices, low memory, or reduced-motion preference
+    if (typeof window !== "undefined") {
+      const isMobileDevice = window.innerWidth < 768;
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (isMobileDevice || prefersReducedMotion) {
+        setIsEcoMode(true);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -283,10 +322,10 @@ export default function Projects() {
 
     const interval = setInterval(() => {
       setActiveNode((prev) => (prev + 1) % featuredProjects.length);
-    }, 2800);
+    }, isEcoMode ? 4000 : 2800);
 
     return () => clearInterval(interval);
-  }, [isAutoPlaying, selectedProject, featuredProjects.length, isMobile]);
+  }, [isAutoPlaying, selectedProject, featuredProjects.length, isMobile, isEcoMode]);
 
   // Global Drag Handlers
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -324,13 +363,31 @@ export default function Projects() {
         03 // FEATURED PROJECTS
       </motion.span>
 
-      <div className="flex items-center gap-6 mb-12">
-        <h2 className="text-4xl font-extrabold tracking-tight shrink-0 text-[var(--text-primary)]">
-          Featured Interactive Applications
-        </h2>
-        <span className="font-mono text-[var(--text-secondary)] text-sm font-semibold tracking-wider shrink-0">
-          ({featuredProjects.length})
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+        <div className="flex items-center gap-4">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight shrink-0 text-[var(--text-primary)]">
+            Featured Interactive Applications
+          </h2>
+          <span className="font-mono text-[var(--text-secondary)] text-sm font-semibold tracking-wider shrink-0">
+            ({featuredProjects.length})
+          </span>
+        </div>
+
+        {/* Dynamic Low-Power / Eco Mode Toggle */}
+        <button
+          onClick={() => setIsEcoMode(!isEcoMode)}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono border transition-all cursor-pointer select-none ${
+            isEcoMode
+              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.2)]"
+              : "border-blue-500/40 bg-blue-500/10 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.2)]"
+          }`}
+          title={isEcoMode ? "Eco Mode enabled: optimized for battery and mobile efficiency" : "High Performance 3D active"}
+        >
+          {isEcoMode ? <BatteryCharging size={14} /> : <Zap size={14} />}
+          <span className="text-[11px] font-semibold tracking-wide">
+            {isEcoMode ? "Eco Mode (Active)" : "3D High Performance"}
+          </span>
+        </button>
       </div>
 
       {/* Wrapper Div handles global DOM swipe events so clicking empty space still drags */}
@@ -347,6 +404,8 @@ export default function Projects() {
             {/* The Canvas itself ignores global pointer events to prevent conflict */}
             <Canvas
               key={canvasKey}
+              dpr={isEcoMode ? [1, 1] : [1, 2]}
+              frameloop={isVisible ? "always" : "never"}
               camera={{ position: [0, 0, 8.5], fov: 45 }}
               className="w-full h-full pointer-events-none"
               onCreated={({ gl }) => {
@@ -369,6 +428,7 @@ export default function Projects() {
                     setActiveNode={setActiveNode}
                     setIsAutoPlaying={setIsAutoPlaying}
                     isVisible={isVisible}
+                    isEcoMode={isEcoMode}
                   />
                 </Suspense>
               </group>
@@ -421,9 +481,18 @@ export default function Projects() {
                         <h3 className="text-base font-bold text-white leading-snug line-clamp-2">
                           {project.title}
                         </h3>
-                        <p className="text-xs text-[#CBD5E1] mt-2 line-clamp-3 leading-relaxed">
+                        <p className="text-xs text-[#a3a3a3] mt-2 line-clamp-3 leading-relaxed">
                           {project.description}
                         </p>
+                      </div>
+
+                      <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+                        <span className="text-[10px] font-mono text-[#a3a3a3]">
+                          {safeTags[0] || "Featured"}
+                        </span>
+                        <span className="text-xs font-mono text-[#10B981] font-semibold">
+                          View details →
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -434,89 +503,139 @@ export default function Projects() {
         )}
       </div>
 
-      {/* 2. Additional Engineered Systems & Software Projects */}
+      {/* Pagination & Indicators */}
+      <div className="flex items-center justify-between mt-8 border-t border-white/5 pt-6">
+        <div className="flex items-center gap-2">
+          {featuredProjects.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                setActiveNode(i);
+                setIsAutoPlaying(false);
+              }}
+              aria-label={`Go to featured project 0${i + 1}`}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                activeNode === i
+                  ? "w-8 bg-[#10B981] shadow-[0_0_10px_#10B981]"
+                  : "w-2 bg-white/20 hover:bg-white/40"
+              }`}
+            />
+          ))}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setActiveNode((prev) => (prev - 1 + featuredProjects.length) % featuredProjects.length);
+              setIsAutoPlaying(false);
+            }}
+            aria-label="Previous featured project"
+            className="p-3 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-[#EDEDED] transition-all cursor-pointer"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+          <button
+            onClick={() => {
+              setActiveNode((prev) => (prev + 1) % featuredProjects.length);
+              setIsAutoPlaying(false);
+            }}
+            aria-label="Next featured project"
+            className="p-3 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-[#EDEDED] transition-all cursor-pointer"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Secondary Project Section */}
       {otherProjects.length > 0 && (
-        <div className="mt-24">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
-            <div>
-              <motion.span
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="text-[10px] font-mono tracking-[0.25em] text-[#3B82F6] uppercase block mb-2 font-black"
-              >
-                04 // SYSTEMS &amp; ARCHITECTURE
-              </motion.span>
-              <h3 className="text-2xl sm:text-3xl font-extrabold text-[var(--text-primary)] tracking-tight">
-                Engineered Systems &amp; Software Projects
-              </h3>
-            </div>
+        <div className="mt-20 pt-12 border-t border-white/5">
+          <motion.span
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-[10px] font-mono tracking-[0.25em] text-[#3B82F6] uppercase block mb-3 font-black"
+          >
+            04 // SYSTEMS & ARCHITECTURE
+          </motion.span>
+
+          <div className="flex items-center gap-4 mb-8">
+            <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--text-primary)]">
+              Engineered Systems &amp; Software
+            </h3>
             <span className="font-mono text-[var(--text-secondary)] text-sm font-semibold tracking-wider">
-              ({otherProjects.length} Projects)
+              ({otherProjects.length})
             </span>
           </div>
 
+          {/* 2x2 Responsive Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {otherProjects.map((project, idx) => {
               const safeTags = project.tags || [];
-              const color = getGlowColor(safeTags);
+              const glowColor = getGlowColor(safeTags);
+
               return (
                 <motion.div
                   key={project.id}
-                  initial={{ opacity: 0, y: 24 }}
+                  initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-40px" }}
-                  transition={{ duration: 0.45, delay: idx * 0.08 }}
-                  whileHover={{ y: -6 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: idx * 0.1 }}
                   onClick={() => setSelectedProject(project)}
-                  className="group relative rounded-2xl border border-white/10 bg-[#080808]/90 hover:bg-[#0e0e0e] p-5 flex flex-col justify-between transition-all duration-300 hover:border-[#10B981]/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.12)] cursor-pointer"
+                  className="group relative rounded-2xl border border-white/10 bg-[#09090b]/80 hover:bg-[#0f0f12] p-5 sm:p-6 transition-all duration-300 hover:border-white/20 cursor-pointer flex flex-col justify-between overflow-hidden shadow-lg hover:shadow-[0_0_30px_rgba(0,0,0,0.5)]"
                 >
+                  {/* Subtle hover accent line */}
+                  <div
+                    className="absolute top-0 left-0 right-0 h-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    style={{ background: `linear-gradient(90deg, transparent, ${glowColor}, transparent)` }}
+                  />
+
                   <div>
-                    {/* Project Image Header */}
-                    <div className="relative w-full h-[180px] rounded-xl overflow-hidden border border-white/5 bg-[#030303] mb-4">
+                    {/* Top row: Status / Index & Links */}
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-[11px] font-mono font-bold tracking-widest text-[#94A3B8] px-2 py-0.5 rounded bg-white/5 border border-white/10">
+                        SYS-0{idx + 1}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {project.github && (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(project.github, "_blank", "noreferrer");
+                            }}
+                            title="GitHub Repository"
+                            className="p-1.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/15 text-zinc-300 hover:text-white transition-colors"
+                          >
+                            <GithubIcon />
+                          </span>
+                        )}
+                        {project.demo && (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(project.demo, "_blank", "noreferrer");
+                            }}
+                            title="Live Demo"
+                            className="text-[10px] font-mono px-2 py-1 rounded-full bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 hover:bg-[#10B981]/25 transition-colors font-bold"
+                          >
+                            LIVE ↗
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Image Preview */}
+                    <div className="relative w-full h-44 rounded-xl overflow-hidden mb-4 border border-white/5">
                       <Image
                         src={project.image}
                         alt={project.title}
-                        width={400}
-                        height={200}
-                        className="object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500 w-full h-full"
-                        loading="lazy"
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
                       />
-                      {/* Index Badge */}
-                      <div
-                        className="absolute top-2.5 left-2.5 flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-widest text-black shadow-md"
-                        style={{ background: color }}
-                      >
-                        0{idx + 1}
-                      </div>
-
-                      {/* Action Links (Source & Demo) on Image */}
-                      <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-10">
-                        {project.github && (
-                          <a
-                            href={project.github}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            aria-label={`View ${project.title} repository source code on GitHub`}
-                            className="p-1.5 rounded-full bg-[#0A0A0A]/85 hover:bg-[#10b981]/20 border border-white/10 hover:border-[#10B981] text-[#EDEDED] transition-all backdrop-blur-md"
-                          >
-                            <GithubIcon />
-                          </a>
-                        )}
-                        {project.demo && (
-                          <a
-                            href={project.demo}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            aria-label={`Launch live demo for ${project.title}`}
-                            className="px-2 py-1 rounded-full bg-[#10B981]/90 hover:bg-[#10B981] text-[10px] font-bold text-black transition-all backdrop-blur-md"
-                          >
-                            Demo ↗
-                          </a>
-                        )}
-                      </div>
                     </div>
 
                     {/* Tech Tags */}
@@ -555,20 +674,6 @@ export default function Projects() {
           </div>
         </div>
       )}
-
-      <div className="sr-only">
-        {allProjects.map((project) => (
-          <article key={project.id}>
-            <h3>{project.title}</h3>
-            <p>{project.description}</p>
-            <ul>
-              {(project.tags || []).map((tag) => (
-                <li key={tag}>{tag}</li>
-              ))}
-            </ul>
-          </article>
-        ))}
-      </div>
 
       {typeof document !== "undefined" && createPortal(
         <AnimatePresence>
@@ -640,6 +745,21 @@ export default function Projects() {
                   />
                 </div>
 
+                {/* Ask AI Contextual Action Button */}
+                {onOpenChatWithPrompt && (
+                  <button
+                    onClick={() => {
+                      const title = selectedProject.title;
+                      setSelectedProject(null);
+                      onOpenChatWithPrompt(`Can you explain the technical architecture, stack, and implementation challenges of ${title}?`);
+                    }}
+                    className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-[#3B82F6]/10 hover:bg-[#3B82F6]/20 border border-[#3B82F6]/30 text-[#60A5FA] font-mono text-xs font-bold transition-all shadow-sm cursor-pointer"
+                  >
+                    <Sparkles size={14} className="animate-pulse" />
+                    Ask AI Concierge about {selectedProject.title}
+                  </button>
+                )}
+
                 <div className="space-y-2">
                   <h4 className="text-[10px] font-mono text-[#3B82F6] tracking-widest uppercase font-bold">// SUMMARY</h4>
                   <p className="text-sm text-[#d4d4d4] leading-relaxed">{selectedProject.description}</p>
@@ -656,14 +776,13 @@ export default function Projects() {
                   </div>
                 </div>
 
-                {selectedProject.id === "ai-portfolio" && (
-                  <div className="space-y-2">
-                    <h4 className="text-[10px] font-mono text-[#3B82F6] tracking-widest uppercase font-bold">// SYSTEM ARCHITECTURE DIAGRAM</h4>
-                    <div className="p-4 rounded-xl bg-[#0A0A0A] border border-[#262626]">
-                      <ArchitectureDiagram />
-                    </div>
+                {/* Dynamic System Architecture Diagram */}
+                <div className="space-y-2">
+                  <h4 className="text-[10px] font-mono text-[#3B82F6] tracking-widest uppercase font-bold">// SYSTEM ARCHITECTURE FLOW</h4>
+                  <div className="p-4 rounded-xl bg-[#0A0A0A] border border-[#262626]">
+                    <ArchitectureDiagram projectId={selectedProject.id} />
                   </div>
-                )}
+                </div>
 
                 {selectedProject.impact && (
                   <div className="space-y-2">
