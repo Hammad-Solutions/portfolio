@@ -403,57 +403,123 @@ export default function Home() {
     if (!isVoiceEnabled || typeof window === "undefined" || !("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
 
-    const cleanText = text
-      .replace(/https?:\/\/\S+/g, "")
-      .replace(/[*_#`[\]()]/g, " ")
-      .replace(/[-•]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+    if (!text || !text.trim()) return;
 
-    if (!cleanText) return;
-
-    const utterance = new SpeechSynthesisUtterance(cleanText);
+    // 1. Filter and identify the highest quality natural/neural MALE voice
     const voices = window.speechSynthesis.getVoices();
+    if (!voices || voices.length === 0) return;
 
-    const preferredKeywords = [
+    const isMaleVoice = (v: SpeechSynthesisVoice): boolean => {
+      const name = v.name.toLowerCase();
+      const uri = v.voiceURI.toLowerCase();
+      const femaleKeywords = [
+        "female", "woman", "girl", "zira", "aria", "jenny", "samantha", 
+        "karen", "victoria", "hazel", "susan", "catherine", "linda", 
+        "heather", "fiona", "tessa", "moira", "veena", "kyoko", "yuna",
+        "alice", "serena", "zoe", "emma", "amy", "joanna", "salli", "kendra"
+      ];
+      return !femaleKeywords.some((kw) => name.includes(kw) || uri.includes(kw));
+    };
+
+    const malePriority = [
+      // Microsoft Natural Male Neural Voices
       "Microsoft Guy Online (Natural)",
       "Microsoft Ryan Online (Natural)",
       "Microsoft Steffan Online (Natural)",
+      "Microsoft Christopher Online (Natural)",
+      "Microsoft Eric Online (Natural)",
+      "Microsoft Andrew Online (Natural)",
+      "Microsoft Brian Online (Natural)",
+      // Google Neural Male Voices
       "Google UK English Male",
-      "Google US English",
+      "Google US English Male",
+      "en-US-Neural2-D",
+      "en-US-Neural2-J",
+      "en-GB-Neural2-B",
+      "en-GB-Neural2-D",
+      "en-US-Wavenet-D",
+      "en-US-Wavenet-B",
+      // Apple & OS Native Male Voices
       "Daniel",
       "Alex",
+      "Arthur",
+      "Oliver",
+      "Tom",
+      "Fred",
       "Microsoft Guy",
       "Microsoft David",
-      "Aaron",
-      "Natural"
+      "Microsoft Mark",
+      "Microsoft George",
+      "Google US English"
     ];
 
-    let selectedVoice = null;
-    for (const kw of preferredKeywords) {
-      const match = voices.find((v) => v.name.includes(kw) || v.voiceURI.includes(kw));
+    let selectedVoice: SpeechSynthesisVoice | null = null;
+    for (const kw of malePriority) {
+      const match = voices.find(
+        (v) => (v.name.includes(kw) || v.voiceURI.includes(kw)) && isMaleVoice(v)
+      );
       if (match) {
         selectedVoice = match;
         break;
       }
     }
 
-    if (!selectedVoice && voices.length > 0) {
+    if (!selectedVoice) {
       selectedVoice =
-        voices.find((v) => v.lang === "en-US" || v.lang === "en-GB") ||
-        voices.find((v) => v.lang.startsWith("en")) ||
+        voices.find((v) => (v.lang.startsWith("en") || v.lang === "en-US" || v.lang === "en-GB") && isMaleVoice(v)) ||
+        voices.find((v) => isMaleVoice(v)) ||
         voices[0];
     }
 
-    if (selectedVoice) {
-      utterance.voice = selectedVoice;
-    }
+    // 2. Parse text into semantic segments (headings, bullet points, narrative paragraphs)
+    const rawLines = text.split("\n").map((l) => l.trim()).filter(Boolean);
 
-    utterance.rate = 1.0;
-    utterance.pitch = 0.95;
-    utterance.volume = 1.0;
+    rawLines.forEach((line) => {
+      // Clean markdown syntax for pristine human speech audio without noise
+      let cleanLine = line
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // [Title](url) -> Title
+        .replace(/https?:\/\/\S+/g, "") // remove raw urls
+        .replace(/[*_#`~[\]]/g, "") // remove asterisks, hash, backticks
+        .replace(/\s+/g, " ")
+        .trim();
 
-    window.speechSynthesis.speak(utterance);
+      if (!cleanLine) return;
+
+      const isHeading =
+        line.startsWith("#") ||
+        line.endsWith(":") ||
+        (line.startsWith("**") && line.endsWith("**")) ||
+        /^(overview|architecture|stack|projects|core stack|experience|education|why hire)/i.test(cleanLine);
+
+      const isBullet = /^[-*•\d+.]\s+/.test(line);
+
+      // Clean leading bullet symbols for smooth speech
+      cleanLine = cleanLine.replace(/^[-*•]\s+/, "");
+
+      const utterance = new SpeechSynthesisUtterance(cleanLine);
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+      }
+
+      if (isHeading) {
+        // Confident, commanding, deep headline tone with deliberate pace to sound like a title
+        utterance.pitch = 0.88;
+        utterance.rate = 0.92;
+        utterance.volume = 1.0;
+      } else if (isBullet) {
+        // Crisp, punchy, articulate technical delivery for bulleted items
+        utterance.pitch = 0.95;
+        utterance.rate = 1.02;
+        utterance.volume = 1.0;
+      } else {
+        // Natural human conversational tempo and inflection
+        utterance.pitch = 0.93;
+        utterance.rate = 0.98;
+        utterance.volume = 1.0;
+      }
+
+      window.speechSynthesis.speak(utterance);
+    });
   };
 
   useEffect(() => {
