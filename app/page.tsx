@@ -312,7 +312,7 @@ export default function Home() {
     {
       id: "init",
       sender: "bot",
-      text: "Welcome! I'm Hammad AI Concierge. Ask me anything about Hammad's systems architecture, stack, or availability."
+      text: "Ready to assist. Query me directly regarding Muhammad Hammad's systems architecture, full-stack tech stack, or hiring availability."
     }
   ]);
 
@@ -416,15 +416,16 @@ export default function Home() {
     const voices = window.speechSynthesis.getVoices();
 
     const preferredKeywords = [
+      "Microsoft Guy Online (Natural)",
+      "Microsoft Ryan Online (Natural)",
+      "Microsoft Steffan Online (Natural)",
+      "Google UK English Male",
       "Google US English",
-      "Google UK English Female",
-      "Microsoft Aria",
-      "Microsoft Jenny",
-      "Microsoft Guy",
-      "Samantha",
-      "Karen",
       "Daniel",
       "Alex",
+      "Microsoft Guy",
+      "Microsoft David",
+      "Aaron",
       "Natural"
     ];
 
@@ -448,8 +449,8 @@ export default function Home() {
       utterance.voice = selectedVoice;
     }
 
-    utterance.rate = 0.95;
-    utterance.pitch = 1.0;
+    utterance.rate = 1.0;
+    utterance.pitch = 0.95;
     utterance.volume = 1.0;
 
     window.speechSynthesis.speak(utterance);
