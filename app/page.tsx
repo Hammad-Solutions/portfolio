@@ -323,8 +323,42 @@ export default function Home() {
   const [isRecruiterModalOpen, setIsRecruiterModalOpen] = useState(false);
   const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [promptCategory, setPromptCategory] = useState<"resume" | "projects" | "general">("resume");
+
+  // Subtle acoustic audio chime for futuristic UI feedback
+  const playHapticChime = (type: "start" | "mic") => {
+    if (typeof window === "undefined") return;
+    try {
+      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (type === "start") {
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(520, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1040, ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.06, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.16);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.16);
+      } else if (type === "mic") {
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(650, ctx.currentTime);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.14);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.14);
+      }
+    } catch {
+      // AudioContext policy
+    }
+  };
 
   // Speech-to-Text (STT) Voice-to-Voice AI Listener
   const startListening = () => {
@@ -341,6 +375,7 @@ export default function Home() {
         return;
       }
 
+      playHapticChime("mic");
       const recognition = new SpeechRec();
       recognition.continuous = false;
       recognition.interimResults = false;
@@ -402,8 +437,11 @@ export default function Home() {
   const handleSpeak = (text: string) => {
     if (!isVoiceEnabled || typeof window === "undefined" || !("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
+    setIsSpeaking(false);
 
     if (!text || !text.trim()) return;
+
+    playHapticChime("start");
 
     // 1. Filter and identify the highest quality natural/neural MALE voice
     const voices = window.speechSynthesis.getVoices();
@@ -473,8 +511,18 @@ export default function Home() {
 
     // 2. Parse text into semantic segments (headings, bullet points, narrative paragraphs)
     const rawLines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+    const validLines = rawLines.filter((l) => {
+      const c = l
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+        .replace(/https?:\/\/\S+/g, "")
+        .replace(/[*_#`~[\]]/g, "")
+        .trim();
+      return c.length > 0;
+    });
 
-    rawLines.forEach((line) => {
+    if (validLines.length === 0) return;
+
+    validLines.forEach((line, idx) => {
       // Clean markdown syntax for pristine human speech audio without noise
       let cleanLine = line
         .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // [Title](url) -> Title
@@ -504,18 +552,26 @@ export default function Home() {
       if (isHeading) {
         // Confident, commanding, deep headline tone with deliberate pace to sound like a title
         utterance.pitch = 0.88;
-        utterance.rate = 0.92;
+        utterance.rate = 0.95;
         utterance.volume = 1.0;
       } else if (isBullet) {
         // Crisp, punchy, articulate technical delivery for bulleted items
-        utterance.pitch = 0.95;
-        utterance.rate = 1.02;
+        utterance.pitch = 0.96;
+        utterance.rate = 1.06;
         utterance.volume = 1.0;
       } else {
         // Natural human conversational tempo and inflection
-        utterance.pitch = 0.93;
-        utterance.rate = 0.98;
+        utterance.pitch = 0.94;
+        utterance.rate = 1.04;
         utterance.volume = 1.0;
+      }
+
+      if (idx === 0) {
+        utterance.onstart = () => setIsSpeaking(true);
+      }
+      if (idx === validLines.length - 1) {
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false);
       }
 
       window.speechSynthesis.speak(utterance);
@@ -1296,6 +1352,7 @@ export default function Home() {
                           setIsVoiceEnabled(next);
                           if (!next && typeof window !== "undefined" && "speechSynthesis" in window) {
                             window.speechSynthesis.cancel();
+                            setIsSpeaking(false);
                           }
                         }}
                         className={`px-2 py-1 rounded transition-colors text-[10px] font-mono flex items-center gap-1.5 border cursor-pointer ${
@@ -1308,6 +1365,21 @@ export default function Home() {
                         {isVoiceEnabled ? <Volume2 className="w-3.5 h-3.5 text-emerald-400" /> : <VolumeX className="w-3.5 h-3.5" />}
                         <span className="hidden sm:inline">{isVoiceEnabled ? "Voice On" : "Mute"}</span>
                       </button>
+
+                      {/* Live Audio Reactive Equalizer Wave Indicator */}
+                      {isSpeaking && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/35 text-[10px] font-mono text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                          <div className="flex items-end gap-0.5 h-3">
+                            <span className="w-0.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:0ms] h-2" />
+                            <span className="w-0.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:150ms] h-3" />
+                            <span className="w-0.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:300ms] h-1.5" />
+                            <span className="w-0.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:75ms] h-2.5" />
+                          </div>
+                          <span className="font-bold tracking-wider uppercase text-[9px] hidden sm:inline">Audio Live</span>
+                        </div>
+                      )}
+
                       <span className="font-mono text-[10px] text-[#a3a3a3] tracking-widest uppercase">hammad_ai_concierge</span>
                     </div>
 
@@ -1317,6 +1389,7 @@ export default function Home() {
                         setMode("visual");
                         if (typeof window !== "undefined" && "speechSynthesis" in window) {
                           window.speechSynthesis.cancel();
+                          setIsSpeaking(false);
                         }
                         sessionStorage.setItem("hasInteracted", "true");
                       }}
