@@ -16,6 +16,7 @@ export interface Project {
   challenges: string;
   solutions: string;
   impact?: ImpactMetric[];
+  featured?: boolean;
 }
 
 export const portfolioData = {
@@ -44,7 +45,7 @@ export const portfolioData = {
       title: "Interactive AI-Powered Portfolio",
       description: "Built an interactive web portfolio using Next.js, TypeScript, and Three.js. Integrated an embedded AI assistant to instantly answer client and recruiter queries about my technical stack and projects.",
       tags: ["Next.js", "TypeScript", "Three.js", "Tailwind CSS", "AI Integration"],
-      image: "/ai_portfolio_cover.png",
+      image: "/ai_portfolio_cover.webp",
       github: "https://github.com/Hammad-Solutions/Portfolio",
       demo: "https://hammadsolutions.vercel.app",
       architecture: ["Next.js App Router", "TypeScript", "Tailwind CSS & CSS Modules", "Three.js & React Three Fiber", "RAG AI Knowledge Engine"],
@@ -54,37 +55,58 @@ export const portfolioData = {
         { label: "Lighthouse Score", value: "98", unit: "/100" },
         { label: "AI Response", value: "<800", unit: "ms" },
         { label: "Build Time", value: "<16", unit: "s" }
-      ]
+      ],
+      featured: true
     },
     {
-      id: "previous-portfolio",
-      title: "Personal Portfolio Site",
-      description: "Created a lightweight, responsive portfolio with HTML5, CSS3, and JavaScript. Focused on semantic markup, fast load times, and cross-browser compatibility without external heavy frameworks.",
-      tags: ["HTML", "CSS", "JavaScript", "Responsive Design"],
-      image: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?q=80&w=600&auto=format&fit=crop",
-      github: "https://github.com/Hammad-Solutions/hammad-solutions.github.io",
-      architecture: ["HTML5 Semantic Markup", "Vanilla CSS3 Flexbox/Grid", "JavaScript DOM Interactions"],
-      challenges: "Designing glassmorphic UI elements and responsive layouts using pure CSS without third-party frameworks.",
-      solutions: "Built custom CSS variables and responsive media query breakpoints for smooth mobile reflows.",
+      id: "saas-devboard",
+      title: "SaaS DevBoard — GitHub Task Platform",
+      description: "A full-stack developer project management board syncing in real-time with GitHub. Features NextAuth OAuth, dynamic Kanban workflows, and automated webhooks to track issues, pull requests, and velocity.",
+      tags: ["Next.js", "TypeScript", "Prisma", "PostgreSQL", "NextAuth.js", "Tailwind CSS"],
+      image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800&auto=format&fit=crop",
+      demo: "https://saas-devboard.vercel.app",
+      architecture: ["Next.js 16 App Router", "Prisma ORM & PostgreSQL", "NextAuth.js v5", "GitHub Webhooks Engine", "Recharts Analytics"],
+      challenges: "Handling asynchronous GitHub webhook payloads without race conditions or dropped event states during rapid pull request commits.",
+      solutions: "Engineered idempotent webhook event processors with optimistic UI updates for instant, smooth task card transitions.",
       impact: [
-        { label: "Bundle Size", value: "0", unit: "KB" },
-        { label: "Dependencies", value: "None", unit: "" }
-      ]
+        { label: "Sync Latency", value: "<200", unit: "ms" },
+        { label: "Automation", value: "100", unit: "%" },
+        { label: "Type Safety", value: "100", unit: "%" }
+      ],
+      featured: true
     },
     {
-      id: "student-management",
-      title: "Student Management System",
-      description: "Built a C++ record management system for student data. Used structured file handling and input validation checks to manage records efficiently without data corruption.",
-      tags: ["C++", "File Handling", "Data Structures", "CLI"],
-      image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=600&auto=format&fit=crop",
-      github: "https://github.com/Hammad-Solutions/Student-Management-System-Cpp-File-Handling",
-      architecture: ["C++17 Console Application", "File Stream Pipeline", "Record Buffer Manager"],
-      challenges: "Preventing file record corruption during updates on flat text storage files.",
-      solutions: "Created temporary buffer files during modifications to validate data before saving updates permanently.",
+      id: "styleway-studio",
+      title: "StyleWay Studio — Luxury E-Commerce",
+      description: "A luxury fashion studio and storefront featuring an interactive lookbook with clickable product hotspots, an interactive mix-and-match Outfit Builder, 10+ designer marketing templates, and a full Supabase admin panel.",
+      tags: ["Next.js", "React.js", "Supabase", "TypeScript", "Framer Motion", "Tailwind CSS"],
+      image: "/styleway_cover.png",
+      demo: "https://stylewaystudio.vercel.app",
+      architecture: ["Next.js 16 App Router", "Supabase SSR & PostgreSQL", "SWR Reactive Caching", "Framer Motion Spring Physics", "Role-Based Admin Access"],
+      challenges: "Propagating real-time admin modifications (campaign discounts, stock status, hero copy) to active client sessions without layout shifts or reloads.",
+      solutions: "Implemented SWR reactive caching paired with Supabase SSR to deliver instant sub-100ms store parameter revalidation.",
       impact: [
-        { label: "Access Control", value: "Role-Based", unit: "" },
-        { label: "Data Safety", value: "100", unit: "%" }
-      ]
+        { label: "Curated Items", value: "100+", unit: "" },
+        { label: "Promo Engines", value: "10", unit: "Themes" },
+        { label: "Revalidation", value: "<100", unit: "ms" }
+      ],
+      featured: true
+    },
+    {
+      id: "weather-app",
+      title: "Weather App with API Integration",
+      description: "Built a dynamic React weather dashboard that connects to OpenWeatherMap API. Implemented real-time city search, 5-day forecasts, and error handling for invalid locations.",
+      tags: ["React.js", "API Integration", "JavaScript", "Tailwind CSS"],
+      image: "https://images.unsplash.com/photo-1534088568595-a066f410bcda?q=80&w=600&auto=format&fit=crop",
+      demo: "https://hammad-solutions.github.io/weather-app/",
+      architecture: ["React.js", "OpenWeatherMap REST API", "CSS Forecast Grid"],
+      challenges: "Gracefully handling slow API responses and unexpected search queries.",
+      solutions: "Added responsive loading state spinners and fallback error cards for non-existent city names.",
+      impact: [
+        { label: "API Latency", value: "<350", unit: "ms" },
+        { label: "Uptime", value: "100", unit: "%" }
+      ],
+      featured: true
     },
     {
       id: "bank-management",
@@ -99,7 +121,24 @@ export const portfolioData = {
       impact: [
         { label: "Transaction Safety", value: "Verified", unit: "" },
         { label: "Data Integrity", value: "100", unit: "%" }
-      ]
+      ],
+      featured: true
+    },
+    {
+      id: "student-management",
+      title: "Student Management System",
+      description: "Built a C++ record management system for student data. Used structured file handling and input validation checks to manage records efficiently without data corruption.",
+      tags: ["C++", "File Handling", "Data Structures", "CLI"],
+      image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=600&auto=format&fit=crop",
+      github: "https://github.com/Hammad-Solutions/Student-Management-System-Cpp-File-Handling",
+      architecture: ["C++17 Console Application", "File Stream Pipeline", "Record Buffer Manager"],
+      challenges: "Preventing file record corruption during updates on flat text storage files.",
+      solutions: "Created temporary buffer files during modifications to validate data before saving updates permanently.",
+      impact: [
+        { label: "Access Control", value: "Role-Based", unit: "" },
+        { label: "Data Safety", value: "100", unit: "%" }
+      ],
+      featured: false
     },
     {
       id: "hotel-management",
@@ -114,21 +153,24 @@ export const portfolioData = {
       impact: [
         { label: "Architecture", value: "OOP", unit: "Clean" },
         { label: "Room Tiers", value: "Multiple", unit: "Supported" }
-      ]
+      ],
+      featured: false
     },
     {
-      id: "weather-app",
-      title: "Weather App with API Integration",
-      description: "Built a dynamic React weather dashboard that connects to OpenWeatherMap API. Implemented real-time city search, 5-day forecasts, and error handling for invalid locations.",
-      tags: ["React.js", "API Integration", "JavaScript", "Tailwind CSS"],
-      image: "https://images.unsplash.com/photo-1534088568595-a066f410bcda?q=80&w=600&auto=format&fit=crop",
-      architecture: ["React.js", "OpenWeatherMap REST API", "CSS Forecast Grid"],
-      challenges: "Gracefully handling slow API responses and unexpected search queries.",
-      solutions: "Added responsive loading state spinners and fallback error cards for non-existent city names.",
+      id: "previous-portfolio",
+      title: "Personal Portfolio Site",
+      description: "Created a lightweight, responsive portfolio with HTML5, CSS3, and JavaScript. Focused on semantic markup, fast load times, and cross-browser compatibility without external heavy frameworks.",
+      tags: ["HTML", "CSS", "JavaScript", "Responsive Design"],
+      image: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?q=80&w=600&auto=format&fit=crop",
+      github: "https://github.com/Hammad-Solutions/hammad-solutions.github.io",
+      architecture: ["HTML5 Semantic Markup", "Vanilla CSS3 Flexbox/Grid", "JavaScript DOM Interactions"],
+      challenges: "Designing glassmorphic UI elements and responsive layouts using pure CSS without third-party frameworks.",
+      solutions: "Built custom CSS variables and responsive media query breakpoints for smooth mobile reflows.",
       impact: [
-        { label: "API Latency", value: "<350", unit: "ms" },
-        { label: "Uptime", value: "100", unit: "%" }
-      ]
+        { label: "Bundle Size", value: "0", unit: "KB" },
+        { label: "Dependencies", value: "None", unit: "" }
+      ],
+      featured: false
     },
     {
       id: "collaborative-team-work",
@@ -143,7 +185,8 @@ export const portfolioData = {
       impact: [
         { label: "Merge Conflicts", value: "Minimized", unit: "" },
         { label: "Workflow", value: "Structured", unit: "" }
-      ]
+      ],
+      featured: false
     }
   ]
 } as const;

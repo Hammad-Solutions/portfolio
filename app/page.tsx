@@ -181,7 +181,7 @@ function TypewriterRoles() {
 }
 
 function HeroAvatar() {
-  const [imgSrc, setImgSrc] = useState("/p6.png");
+  const [imgSrc, setImgSrc] = useState("/p6.webp");
   const [useFallback, setUseFallback] = useState(false);
 
   const handleError = () => {
@@ -1277,7 +1277,7 @@ export default function Home() {
               aria-label="Toggle Agent Chat"
             >
               <img
-                src="/pic.png"
+                src="/pic.webp"
                 alt="AI Assistant"
                 className={`w-full h-full object-contain scale-110 group-hover:scale-120 transition-all duration-300 ${styles.robotImage} filter ${mode === "terminal" || isChatOpen
                   ? "drop-shadow-[0_0_15px_rgba(16,185,129,0.65)]"
